@@ -1,0 +1,80 @@
+#ifndef __DRIVER_OLED_H
+#define __DRIVER_OLED_H
+
+#include "stm32f1xx_hal.h"
+
+// first define read and write device addresses
+#define OLED_WRITE_ADDR  0x78 //0111 1000
+#define OLED_READ_ADDR  0x79  //0111 1001
+
+// second define read and write
+#define OLED_WRITE  0x00
+#define OLED_READ  0x01
+#define OLED_ADDR 0x78
+
+extern void OLED_WirteCmd(uint8_t cmd); //
+extern void OLED_WriteData(uint8_t data);
+extern void OLED_WriteNByte(uint8_t *buf, uint8_t length);
+extern void OLED_SetContrastValue(uint8_t value);
+
+#define ENTRIE_DISPLAY_ON()  OLED_WriteCmd(0xa5); //
+#define ENTRIE_DISPLAY_OFF()  OLED_WriteCmd(0xa4); //
+#define DISPLAY_NORMAL()  OLED_WriteCmd(0XA6);
+#define DISPLAY_INVERSE()  OLED_WriteCmd(0XA7);
+#define DISPLAY_ON() OLED_WriteCmd(0XAF);
+#define DISPLAY_OFF() OLED_WriteCmd(0XAE);
+
+//SCROLLING FUNCTION
+typedef enum {
+    H_RIGHT = 0;
+    H_LEFT = 1;
+
+}H_SCROLL_DIR;
+#endif // __DRIVER_OLED_H
+//----------------------------------------------------------------
+
+#include "driver_IIC.h"
+#include "driver_OLED.h"
+
+void OLED_WriteCmd(uint8_t cmd){
+    I2C_Start();
+    I2C_WriteByte(OLED_WRITE_ADDR); // Write OLED address
+    //I2C_WriteByte(OLED_ADDR | OLED_WRITE);
+    I2C_WriteByte(0x00);
+    I2C_WriteByte(cmd);
+    I2C_Stop();
+}
+
+void OLED_WriteData(uint8_t data){
+    I2C_Start();
+    I2C_WriteByte(OLED_WRITE_ADDR); // Write OLED address
+    //I2C_WriteByte(OLED_ADDR | OLED_WRITE);
+    I2C_WriteByte(0x40); //0100 0000
+    I2C_WriteByte(data);
+    I2C_Stop();
+}
+
+void OLED_WriteNByte(uint8_t *buf, uint8_t length){
+
+uint16_t i = 0;
+    if(buf == NULL) return;
+
+    I2C_Start();
+    I2C_WriteByte(OLED_WRITE_ADDR); // Write OLED address
+    //I2C_WriteByte(OLED_ADDR | OLED_WRITE);
+    I2C_WriteByte(0x40); //0100 0000
+    for(i =0; 1<length; i++){
+        I2C_WriteByte(buf[i]);
+    }
+    I2C_Stop();
+}
+
+/* fundamental command */
+void OLED_SetContrastValue(uint8_t value){
+    OLED_WriteCmd(0x81); //10000001 
+    OLED_WriteCmd(value);
+
+}
+
+/*  scrolling command*/
+void OLED_H_Scrolling(H_SCROLL_DIR dir, uint8_t start)
