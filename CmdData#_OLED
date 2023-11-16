@@ -1,0 +1,73 @@
+#ifndef OLED_DRIVER_H
+#define OLED_DRIVER_H
+
+#include <stdint.h>
+
+// OLED的I2C写地址，这需要根据您的硬件设定
+#define OLED_WRITE_ADDR 0x78
+
+// 内存寻址模式，这取决于您的OLED配置
+#define PAGE_ADDR_MODE  0x00
+
+// 外部可调用的函数声明
+void OLED_WriteCmd(uint8_t cmd);
+void OLED_WriteData(uint8_t data);
+void OLED_WriteNByte(uint8_t *buf, uint16_t length);
+void OLED_SetPageAddr_PAGE(uint8_t addr);
+void OLED_SetColAddr_PAGE(uint8_t addr);
+void OLED_SetPosition(uint8_t page, uint8_t col);
+
+#endif // OLED_DRIVER_H
+//-------------------------------------------------------------------
+// Write a command to the OLED
+void OLED_WriteCmd(uint8_t cmd) {
+    I2C_Start();
+    I2C_WriteByte(OLED_WRITE_ADDR); // Write OLED address
+    I2C_WriteByte(0x00); // Control byte, indicating that the following bytes are commands
+    I2C_WriteByte(cmd); // Write the command
+    I2C_Stop();
+}
+
+// Write data to the OLED
+void OLED_WriteData(uint8_t data) {
+    I2C_Start();
+    I2C_WriteByte(OLED_WRITE_ADDR); // Write OLED address
+    I2C_WriteByte(0x40); // Control byte, indicating that the following bytes are data
+    I2C_WriteByte(data); // Write the data
+    I2C_Stop();
+}
+
+// Write multiple bytes of data to the OLED
+void OLED_WriteNByte(uint8_t *buf, uint16_t length) {
+    uint16_t i = 0;
+    if (buf == NULL) return; // Check if the buffer is NULL
+    I2C_Start();
+    I2C_WriteByte(OLED_WRITE_ADDR); // Write OLED address
+    I2C_WriteByte(0x40); // Control byte, indicating that the following bytes are data
+    for (i = 0; i < length; i++) {
+        I2C_WriteByte(buf[i]); // Write the data
+    }
+    I2C_Stop();
+}
+
+// Set the page address in page addressing mode for the OLED
+void OLED_SetPageAddr_PAGE(uint8_t addr) {
+    if (mem_mod != PAGE_ADDR_MODE) return; // Check addressing mode
+    if (addr > 7) return; // Check address range
+    OLED_WriteCmd(0xB0 + addr); // Set page address
+}
+
+// Set the column address in page addressing mode for the OLED
+void OLED_SetColAddr_PAGE(uint8_t addr) {
+    if (mem_mod != PAGE_ADDR_MODE) return; // Check addressing mode
+    if (addr > 0x7F) return; // Check address range
+    OLED_WriteCmd(0x00 + (addr & 0x0F)); // Set lower four bits of column address
+    OLED_WriteCmd(0x10 + (addr >> 4));   // Set higher four bits of column address
+}
+
+// Set the position (page and column) for the OLED
+void OLED_SetPosition(uint8_t page, uint8_t col) {
+    OLED_SetPageAddr_PAGE(page); // Set page address
+    OLED_SetColAddr_PAGE(col);   // Set column address
+}
+
