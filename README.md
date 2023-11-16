@@ -1,2 +1,2 @@
-# Building_Programable_hardware_studynotes
-Notes for Building Embedded Systems by Changyi Gu
+# Building_Programable_hardware_studynotes_ROTS STM32F1xx
+
