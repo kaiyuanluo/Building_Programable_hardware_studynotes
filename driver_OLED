@@ -26,10 +26,72 @@ extern void OLED_SetContrastValue(uint8_t value);
 
 //SCROLLING FUNCTION
 typedef enum {
-    H_RIGHT = 0;
-    H_LEFT = 1;
+    H_RIGHT = 0,
+    H_LEFT = 1,
 
 }H_SCROLL_DIR;
+extern void OLED_H_Scrolling(H_SCROLL_DIR dir, uint8_t start, uint8_t fr_time,uint8_t end);
+typedef enum {
+    HV_RIGHT = 0,
+    HV_LEFT = 1,
+
+}HV_SCROLL_DIR;
+extern void OLED_HV_Scrolling(HV_SCROLL_DIR dir, uint8_t start, uint8_t fr_time,uint8_t end,uint8_t offset);
+
+#define SCROLL_ON()         OLED_WriteCmd(0x2F)
+#define SCROLL_OFF()         OLED_WriteCmd(0x2E)
+
+extern void OLED_SetVScrollingArea(uint8_t area, uint8_t row_num);
+
+/* addr set function*/
+typedef enum{
+    H_ADDR_MODE = 0,
+    V_ADDR_MODE = 1,
+    PAGE_ADDR_MODE = 2,
+}MEM_MODE;
+extern void OLED_SetColAddr_PAGE(uint8_t addr);
+extern void OLED_SetMemAddrMode(MEM_MODE mode);
+extern void OLED_SetColAddr_HV(uint8_t start, uint8_t end);
+extern void OLED_SetPageAddr_HV(uint8_t start,uint8_t end);
+extern void OLED_SetPageAddr_HV(uint8_t addr);
+/*hardware config*/
+extern void OLED_SetDispStartLine(uint8_t line);
+#define OLED_SEG_REMAP()    OLED_WriteCmd(0xA1)
+#define OLED_SEG_NOREMAP()    OLED_WriteCmd(0xA0)
+extern void OLED_SetMuxRatio(uint8_t ratio);
+#define OLED_SCAN_NORMAL()    OLED_WriteCmd(0xc0)
+#define OLED_SCAN_REMAP()    OLED_WriteCmd(0xc8)
+typedef enum{
+    COM_PIN_SEQ = 0,
+    COM_PIN_ALT =1,
+}COM_PINS_MODE;
+typedef enum{
+    COM_NOREMAP = 0,
+    COM_REMAP   = 1,
+}COM_REMAP_STATE;
+extern void OLED_SetComConfig(COM_PIN_MODE mode, COM_REMAP_STATE state);
+
+/*time setting function*/
+typedef enum{
+    LEVEL_0 =  0x00,
+    LEVEL_1 =  0x20,
+    LEVEL_2 =  0x30,
+    
+}VCOMH_LEVEL;
+extern void OLED_SetDCLK_Freq(uint8_t div, uint8_t freq);
+extern void OLED_SetPreChargePeriod(uint8_t phase1,uint8_t phase2);
+extern OLED_SetVocmhLevel(VCOMH_LEVEL level);
+
+/* charge pump command*/
+typedef enum{
+    PUMP_DISABLE  =0,
+    PUMP_ENABLE   =1,
+}CHARGE_PUMP_STATE;
+
+extern void OLED_SetChargePump(CHARGE_PUMP_STATE state);
+
+/* OLED Initation*/
+extern void OLED_Init(void);
 #endif // __DRIVER_OLED_H
 //----------------------------------------------------------------
 
@@ -77,4 +139,420 @@ void OLED_SetContrastValue(uint8_t value){
 }
 
 /*  scrolling command*/
-void OLED_H_Scrolling(H_SCROLL_DIR dir, uint8_t start)
+void OLED_H_Scrolling(H_SCROLL_DIR dir, uint8_t start, uint8_t fr_time,uint8_t end){
+    if((dir != H_RIGHT) && ( dir != H_LEFT))  return;
+    if( (strart > 0x07)||(fr_time> 0x008)||(end > 0x07))  return;
+    OLED_WriteCmd(dir);
+    OLED_WriteCmd(0x00);
+    OLED_WriteCmd(start);
+    OLED_WriteCmd(fr_time);
+    OLED_WriteCmd(end);
+    OLED_WriteCmd(0x00);
+    OLED_WriteCmd(0xff);
+}
+
+void OLED_HV_Scrolling(HV_SCROLL_DIR dir, uint8_t start, uint8_t fr_time,uint8_t end,uint8_t offset){
+    if((dir != HV_RIGHT) && ( dir != HV_LEFT))  return;
+    if( (strart > 0x07)||(fr_time> 0x008)||(end > 0x07)||(offset>90x3f))  return;
+    OLED_WriteCmd(dir);
+    OLED_WriteCmd(0x00);
+    OLED_WriteCmd(start);
+    OLED_WriteCmd(fr_time);
+    OLED_WriteCmd(end);
+    OLED_WriteCmd(offset);
+
+}
+void OLED_SetVScrollingArea(uint8_t area, uint8_t row_num){
+    if((rea>0x3F)||(row_num > 0x7f))   return;
+    OLED_WriteCmd(0xa3);
+    OLED_WriteCmd(area);
+    OLED_WriteCmd(row_num);
+}
+/* address function*/
+static uint8_t MEM_MODE mem_mode = PAGE_ADDR_MODE;
+void OLED_SetColAddr_PAGE(uint8_t addr){
+    if(mem_mode != PAGE_ADDR_MODE)      return;
+    if(addr > 0x7f)   return;
+    OLED_WriteCmd(0x00 + (addr & 0x0f));
+    OLED_WriteCmd(0x10 + (addr>>4));
+    
+}
+
+void OLED_SetMemAddrMode(MEM_MODE mode){
+    if((mode != H_ADDR_MODE) && (mode != V_ADDR_MODE) &&(mode != PAGE_ADDR_MODE))    return;
+    OLED_WriteCmd(0x20);
+    OLED_WriteCmd(mode);
+    
+}
+
+void OLED_SetColAddr_HV(uint8_t start, uint8_t end){
+    if(mem_mode == PAGE_ADDR_MODE)   return;
+    if( (strart > 0x07)||(end > 0x07))  return;
+    OLED_WriteCmd(0x21);
+    OLED_WriteCmd(start);
+    OLED_WriteCmd(end);
+}
+
+void OLED_SetPageAddr_HV(uint8_t start,uint8_t end){
+    
+    if(mem_mode == PAGE_ADDR_MODE)   return;
+    if((start > 7) || (end>7))    return;
+    OLED_WriteCmd(0x22);
+    OLED_WriteCmd(start);
+    OLED_WriteCmd(end);
+}
+void OLED_SetPageAddr_HV(uint8_t addr){
+    
+    if(mem_mode != PAGE_ADDR_MODE)   return;
+    if(addr > 7)    return;
+    OLED_WriteCmd(0xb0 + addr);
+
+}
+
+/* hardware config */
+void OLED_SetDispStartLine(uint8_t line){
+    if(line > 63)    return;
+    OLED_WriteCmd(0x40 + line);
+    
+}
+void OLED_SetMuxRatio(uint8_t ratio){
+    if((ratio <15)||(ratio > 63))   return;
+    OLED_WriteCmd(0xA8);
+    OLED_WriteCmd(ratio);
+    
+}
+void OLED_SetDispOffset(uint8_t offset){
+    if(offset > 63)    return;
+    OLED_WriteCmd(0xd3);
+    OLED_WriteCmd(offset);
+}
+
+void OLED_SetComConfig(COM_PIN_MODE mode, COM_REMAP_STATE state){
+    if((mode != COM_PIN_SEQ) && (mode != COM_PIN_ALT))     return;
+    if((state != COM_NOREMAP) && (state != COM_REMPA))     return;
+    
+    OLED_WriteCmd(0xDA);
+    OLED_WriteCmd(0x02 + (mode<<4)+(state<<5))
+}
+/* time setting function*/
+void OLED_SetDCLK_Freq(uint8_t div, uint8_t freq){
+    if((div > 0x0f)||(freq > 0x0f))    return;
+    OLED_WritenCmd(0xd5);
+    OLED_WritenCmd(div + (freq << 4) );
+    
+}
+void OLED_SetPreChargePeriod(uint8_t phase1,uint8_t phase2){
+    if((phase1>0x0f)||(phase2>0x0f))   return;
+    OLED_WriteCmd(0xd9);
+    OLED_WriteCmd(phase1 + (phase2<<4));
+}
+void OLED_SetVocmhLevel(VCOMH_LEVEL level){
+    if((level != LEVEL_0)&&(level != LEVEL_1)&&(level != LEVEL_2))     return;
+    OLED_WriteCmd(0xDB);
+    OLED_WriteCmd(level <<4);
+    
+}
+/* charge pump command*/
+void OLED_SetChargePump(CHARGE_PUMP_STATE state){
+    if((state != PUMP_DISABLE) &&(state != PUMP_ENABLE))    return;
+    OLED_WriteCmd(0x8d);
+    OLED_WriteCmd((state<<2)+ 0x10);
+}
+
+/* initiation OLED*/
+void OLED_Init(void){
+    OLED_SetMuxRatio(0x3F);     //1.set mutiplex ratio
+    OLED_SetDispOffset(0x00);  //2. display offset
+    OLED_SetDispStartline(0x00); //3.display start line
+    OLED_SEG_NOREMAP();   //4.SEGMENT RE-MAP
+    OLED_SCAN_NORMAL90;  //5. COM output scan direction normal
+    OLED_SetComComfig(0x00,0x00);// 6. COM pins
+    OLED_SetContrastValue(0x7f);  // 7. set contrast
+    ENTIRE_DISPLAY_ON();      //8. display on
+    DISPLAY_NORMAL();      //9. 1 turn on display
+    OLED_SetDCLK_Freq(0x00,0x08);   //10.set OSC drequency
+    OLED_SetChargePump(PUMP_ENABLE); // 11. enbale charge pump regulator
+    DISPLAY_ON();
+
+}
+//------------------------修正
+#ifndef __DRIVER_OLED_H
+#define __DRIVER_OLED_H
+
+#include "stm32f1xx_hal.h"
+
+// 定义OLED的读写地址
+#define OLED_WRITE_ADDR  0x78 // 写地址
+#define OLED_READ_ADDR   0x79 // 读地址
+
+// 定义OLED的读写命令
+#define OLED_WRITE  0x00
+#define OLED_READ   0x01
+#define OLED_ADDR   0x78
+
+// OLED基本命令函数
+extern void OLED_WriteCmd(uint8_t cmd);
+extern void OLED_WriteData(uint8_t data);
+extern void OLED_WriteNByte(uint8_t *buf, uint8_t length);
+extern void OLED_SetContrastValue(uint8_t value);
+
+// 显示控制宏
+#define ENTIRE_DISPLAY_ON()   OLED_WriteCmd(0xa5); // 全屏点亮
+#define ENTIRE_DISPLAY_OFF()  OLED_WriteCmd(0xa4); // 全屏熄灭
+#define DISPLAY_NORMAL()      OLED_WriteCmd(0XA6); // 正常显示
+#define DISPLAY_INVERSE()     OLED_WriteCmd(0XA7); // 反色显示
+#define DISPLAY_ON()          OLED_WriteCmd(0XAF); // 开启显示
+#define DISPLAY_OFF()         OLED_WriteCmd(0XAE); // 关闭显示
+
+// 滚动功能
+typedef enum {
+    H_RIGHT = 0,
+    H_LEFT = 1,
+} H_SCROLL_DIR;
+
+extern void OLED_H_Scrolling(H_SCROLL_DIR dir, uint8_t start, uint8_t fr_time, uint8_t end);
+
+typedef enum {
+    HV_RIGHT = 0,
+    HV_LEFT = 1,
+} HV_SCROLL_DIR;
+
+extern void OLED_HV_Scrolling(HV_SCROLL_DIR dir, uint8_t start, uint8_t fr_time, uint8_t end, uint8_t offset);
+
+#define SCROLL_ON()   OLED_WriteCmd(0x2F) // 开启滚动
+#define SCROLL_OFF()  OLED_WriteCmd(0x2E) // 关闭滚动
+
+extern void OLED_SetVScrollingArea(uint8_t area, uint8_t row_num);
+
+// 地址设置函数
+typedef enum {
+    H_ADDR_MODE = 0,
+    V_ADDR_MODE = 1,
+    PAGE_ADDR_MODE = 2,
+} MEM_MODE;
+
+extern void OLED_SetColAddr_PAGE(uint8_t addr);
+extern void OLED_SetMemAddrMode(MEM_MODE mode);
+extern void OLED_SetColAddr_HV(uint8_t start, uint8_t end);
+extern void OLED_SetPageAddr_HV(uint8_t start, uint8_t end);
+extern void OLED_SetPageAddr_HV(uint8_t addr);
+
+// 硬件配置函数
+extern void OLED_SetDispStartLine(uint8_t line);
+#define OLED_SEG_REMAP()    OLED_WriteCmd(0xA1) // SEG重映射
+#define OLED_SEG_NOREMAP()  OLED_WriteCmd(0xA0) // SEG正常映射
+extern void OLED_SetMuxRatio(uint8_t ratio);
+#define OLED_SCAN_NORMAL()  OLED_WriteCmd(0xc0) // 正常扫描
+#define OLED_SCAN_REMAP()   OLED_WriteCmd(0xc8) // 扫描重映射
+
+typedef enum {
+    COM_PIN_SEQ = 0,
+    COM_PIN_ALT = 1,
+} COM_PINS_MODE;
+
+typedef enum {
+    COM_NOREMAP = 0,
+    COM_REMAP = 1,
+} COM_REMAP_STATE;
+
+extern void OLED_SetComConfig(COM_PINS_MODE mode, COM_REMAP_STATE state);
+
+// 时间设置函数
+typedef enum {
+    LEVEL_0 = 0x00,
+    LEVEL_1 = 0x20,
+    LEVEL_2 = 0x30,
+} VCOMH_LEVEL;
+
+extern void OLED_SetDCLK_Freq(uint8_t div, uint8_t freq);
+extern void OLED_SetPreChargePeriod(uint8_t phase1, uint8_t phase2);
+extern void OLED_SetVcomhLevel(VCOMH_LEVEL level);
+
+// 充电泵命令
+typedef enum {
+    PUMP_DISABLE = 0,
+    PUMP_ENABLE = 1,
+} CHARGE_PUMP_STATE;
+
+extern void OLED_SetChargePump(CHARGE_PUMP_STATE state);
+
+// OLED初始化
+extern void OLED_Init(void);
+
+#endif // __DRIVER_OLED_H
+#include "driver_IIC.h"
+#include "driver_OLED.h"
+
+void OLED_WriteCmd(uint8_t cmd) {
+    I2C_Start();
+    I2C_WriteByte(OLED_WRITE_ADDR); // 写入OLED地址
+    I2C_WriteByte(0x00); // 控制字节
+    I2C_WriteByte(cmd); // 命令字节
+    I2C_Stop();
+}
+
+void OLED_WriteData(uint8_t data) {
+    I2C_Start();
+    I2C_WriteByte(OLED_WRITE_ADDR); // 写入OLED地址
+    I2C_WriteByte(0x40); // 控制字节，数据模式
+    I2C_WriteByte(data); // 数据字节
+    I2C_Stop();
+}
+
+void OLED_WriteNByte(uint8_t *buf, uint8_t length) {
+    uint16_t i = 0;
+    if (buf == NULL) return;
+
+    I2C_Start();
+    I2C_WriteByte(OLED_WRITE_ADDR); // 写入OLED地址
+    I2C_WriteByte(0x40); // 控制字节，数据模式
+    for (i = 0; i < length; i++) {
+        I2C_WriteByte(buf[i]);
+    }
+    I2C_Stop();
+}
+
+/* fundamental command */
+void OLED_SetContrastValue(uint8_t value){
+    OLED_WriteCmd(0x81); //10000001 
+    OLED_WriteCmd(value);
+
+}
+
+/*  scrolling command*/
+void OLED_H_Scrolling(H_SCROLL_DIR dir, uint8_t start, uint8_t fr_time,uint8_t end){
+    if((dir != H_RIGHT) && ( dir != H_LEFT))  return;
+    if( (strart > 0x07)||(fr_time> 0x008)||(end > 0x07))  return;
+    OLED_WriteCmd(dir);
+    OLED_WriteCmd(0x00);
+    OLED_WriteCmd(start);
+    OLED_WriteCmd(fr_time);
+    OLED_WriteCmd(end);
+    OLED_WriteCmd(0x00);
+    OLED_WriteCmd(0xff);
+}
+
+void OLED_HV_Scrolling(HV_SCROLL_DIR dir, uint8_t start, uint8_t fr_time,uint8_t end,uint8_t offset){
+    if((dir != HV_RIGHT) && ( dir != HV_LEFT))  return;
+    if( (strart > 0x07)||(fr_time> 0x008)||(end > 0x07)||(offset>90x3f))  return;
+    OLED_WriteCmd(dir);
+    OLED_WriteCmd(0x00);
+    OLED_WriteCmd(start);
+    OLED_WriteCmd(fr_time);
+    OLED_WriteCmd(end);
+    OLED_WriteCmd(offset);
+
+}
+void OLED_SetVScrollingArea(uint8_t area, uint8_t row_num){
+    if((rea>0x3F)||(row_num > 0x7f))   return;
+    OLED_WriteCmd(0xa3);
+    OLED_WriteCmd(area);
+    OLED_WriteCmd(row_num);
+}
+/* address function*/
+static uint8_t MEM_MODE mem_mode = PAGE_ADDR_MODE;
+void OLED_SetColAddr_PAGE(uint8_t addr){
+    if(mem_mode != PAGE_ADDR_MODE)      return;
+    if(addr > 0x7f)   return;
+    OLED_WriteCmd(0x00 + (addr & 0x0f));
+    OLED_WriteCmd(0x10 + (addr>>4));
+    
+}
+
+void OLED_SetMemAddrMode(MEM_MODE mode){
+    if((mode != H_ADDR_MODE) && (mode != V_ADDR_MODE) &&(mode != PAGE_ADDR_MODE))    return;
+    OLED_WriteCmd(0x20);
+    OLED_WriteCmd(mode);
+    
+}
+
+void OLED_SetColAddr_HV(uint8_t start, uint8_t end){
+    if(mem_mode == PAGE_ADDR_MODE)   return;
+    if( (strart > 0x07)||(end > 0x07))  return;
+    OLED_WriteCmd(0x21);
+    OLED_WriteCmd(start);
+    OLED_WriteCmd(end);
+}
+
+void OLED_SetPageAddr_HV(uint8_t start,uint8_t end){
+    
+    if(mem_mode == PAGE_ADDR_MODE)   return;
+    if((start > 7) || (end>7))    return;
+    OLED_WriteCmd(0x22);
+    OLED_WriteCmd(start);
+    OLED_WriteCmd(end);
+}
+void OLED_SetPageAddr_HV(uint8_t addr){
+    
+    if(mem_mode != PAGE_ADDR_MODE)   return;
+    if(addr > 7)    return;
+    OLED_WriteCmd(0xb0 + addr);
+
+}
+
+/* hardware config */
+void OLED_SetDispStartLine(uint8_t line){
+    if(line > 63)    return;
+    OLED_WriteCmd(0x40 + line);
+    
+}
+void OLED_SetMuxRatio(uint8_t ratio){
+    if((ratio <15)||(ratio > 63))   return;
+    OLED_WriteCmd(0xA8);
+    OLED_WriteCmd(ratio);
+    
+}
+void OLED_SetDispOffset(uint8_t offset){
+    if(offset > 63)    return;
+    OLED_WriteCmd(0xd3);
+    OLED_WriteCmd(offset);
+}
+
+void OLED_SetComConfig(COM_PIN_MODE mode, COM_REMAP_STATE state){
+    if((mode != COM_PIN_SEQ) && (mode != COM_PIN_ALT))     return;
+    if((state != COM_NOREMAP) && (state != COM_REMPA))     return;
+    
+    OLED_WriteCmd(0xDA);
+    OLED_WriteCmd(0x02 + (mode<<4)+(state<<5))
+}
+/* time setting function*/
+void OLED_SetDCLK_Freq(uint8_t div, uint8_t freq){
+    if((div > 0x0f)||(freq > 0x0f))    return;
+    OLED_WritenCmd(0xd5);
+    OLED_WritenCmd(div + (freq << 4) );
+    
+}
+void OLED_SetPreChargePeriod(uint8_t phase1,uint8_t phase2){
+    if((phase1>0x0f)||(phase2>0x0f))   return;
+    OLED_WriteCmd(0xd9);
+    OLED_WriteCmd(phase1 + (phase2<<4));
+}
+void OLED_SetVocmhLevel(VCOMH_LEVEL level){
+    if((level != LEVEL_0)&&(level != LEVEL_1)&&(level != LEVEL_2))     return;
+    OLED_WriteCmd(0xDB);
+    OLED_WriteCmd(level <<4);
+    
+}
+/* charge pump command*/
+void OLED_SetChargePump(CHARGE_PUMP_STATE state){
+    if((state != PUMP_DISABLE) &&(state != PUMP_ENABLE))    return;
+    OLED_WriteCmd(0x8d);
+    OLED_WriteCmd((state<<2)+ 0x10);
+}
+
+/* initiation OLED*/
+void OLED_Init(void){
+    OLED_SetMuxRatio(0x3F);     //1.set mutiplex ratio
+    OLED_SetDispOffset(0x00);  //2. display offset
+    OLED_SetDispStartline(0x00); //3.display start line
+    OLED_SEG_NOREMAP();   //4.SEGMENT RE-MAP
+    OLED_SCAN_NORMAL90;  //5. COM output scan direction normal
+    OLED_SetComComfig(0x00,0x00);// 6. COM pins
+    OLED_SetContrastValue(0x7f);  // 7. set contrast
+    ENTIRE_DISPLAY_ON();      //8. display on
+    DISPLAY_NORMAL();      //9. 1 turn on display
+    OLED_SetDCLK_Freq(0x00,0x08);   //10.set OSC drequency
+    OLED_SetChargePump(PUMP_ENABLE); // 11. enbale charge pump regulator
+    DISPLAY_ON();
+
+}
