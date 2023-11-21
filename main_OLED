@@ -16,10 +16,35 @@ void OLED_Clear(void){
         OLED_WriteNBytes(&buf[0],128);
     }
 }
+void OLED_PutChar(uint8_t page, uint8_t col, char c){
+    OLED_SetPosition(page,col);
+    OLED_WriteNBytes((uint8_t*)&ascii[c][0],8);
 
+    OLED_SetPosition(page,col);
+    OLED_WriteNBytes((uint8_t*)&ascii[c][8],8); 
+}
+
+void OLED_PrintString(uint8_t page, uint8_t col, char *str){
+    while(*str!=0){
+        OLED_PutChar(page, col,*str);
+        col += 8;
+        if(col>127){
+            page +=2;
+        }
+        if (page > 7){
+            page = 0;
+     
+        }
+        str++;
+    }
+}
 
 //================================================================
 //Main function
+int main(void){
+    /*character code shown on display*/
+    uint8_t negitive_A[] = {0x00,0x00,0xc0,0x38,0xe0,0x00,0x00,0x00,0x20,0x3c,0x23,0x02,0x02,0x27,0x38,0x20};
+    uint8_t positive_A[] = {0xff,0xff,0x3f,0xc7,0x1f,0xff,0xff,0xff,0xdf,0xc3,0xdc,0xfd,0xfd,0xd8,0xc7,0xdf  };
 /*Reset of all peripherals, Initialise the flash interface and systick.*/
 HAL_Init();
 
@@ -36,4 +61,20 @@ MX_USART2_UART_Init();
 OLED_Init();
 OLED_Clear();
 OLED_SetPosition(0,0);
-OLED_WriteCmd(0xff);
+OLED_WriteNbyte(&negative_A[0],8);
+OLED_SetPosition(1,0);
+OLED_WriteNbyte(&negative_A[8],8);
+OLED_SetPosition(0,8);
+OLED_WriteNbyte(&positive_A[0],8);
+OLED_SetPosition(1,8);
+OLED_WriteNbyte(&positive_A[8],8);
+
+
+
+
+
+
+
+
+
+}
