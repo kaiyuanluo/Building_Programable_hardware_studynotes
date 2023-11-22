@@ -1,6 +1,9 @@
 /*driver function*/
 extern void OLED_SetPosition(uint8_t page, uint8_t col);
 extern void OLED_Clear(void);
+extern void OLED_PutChar(uint8_t page, uint8_t col, char c);
+extern void OLED_PrintString(uint8_t page, uint8_t col, char *str);
+
 //----------------------------------------------------------------
 /* Driver function*/
 void OLED_SetPosition(uint8_t page, uint8_t col){
@@ -69,12 +72,8 @@ OLED_WriteNbyte(&positive_A[0],8);
 OLED_SetPosition(1,8);
 OLED_WriteNbyte(&positive_A[8],8);
 
-
-
-
-
-
-
+OLED_PutChar(0,0,'a');
+OLED_PrintString(2,0,'hello');
 
 
 }
